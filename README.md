@@ -1,1 +1,1 @@
-# msw-appcore
+# README #
