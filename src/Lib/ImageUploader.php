@@ -37,16 +37,6 @@ class ImageUploader{
 		return true;
 	}
 
-	/**
-	 * OBS.: Procure sempre informar $path sem começar com separador de diretórios a partir de Site.webroot/img.
-	 * Por exemplo:
-	 * $uploader->setPath('banners/');
-	 * no lugar de
-	 * $uploader->setPath('/banners/');
-	 *
-	 * Assim ele formará um caminho correto ao executar $uploader->upload() ou $uploader->thumbnail();
-	 * @param string $path O caminho do diretório onde será salva a imagem dentro de Site.webroot/img/
-	 */
 	public function setPath($path){
 		if(!preg_match('/[\/]$/', $path))
 			$path .= DS;
