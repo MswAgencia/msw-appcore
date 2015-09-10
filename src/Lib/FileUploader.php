@@ -51,7 +51,7 @@ class FileUploader {
   private $create_destination = true;
 
   public function __construct() {
-    $this->destination(TMP . DS . 'uploads');
+    $this->destination(TMP . 'uploads');
   }
 
   /**

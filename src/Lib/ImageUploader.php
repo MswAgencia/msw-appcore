@@ -23,13 +23,14 @@ class ImageUploader{
 	public function __construct(){
 		$this->Cropper = new Cropper();
 		$this->Uploader = new FileUploader();
+		$this->Uploader->create_destination();
 		$this->Uploader->allowed_types('image/jpg', 'image/jpeg', 'image/gif', 'image/png');
 	}
 
 	public function setData(array $data){
 		if(!isset($data['error']))
 			throw new \Exception('Erro nas informações de upload ($_FILES). Verifique se o "enctype" do form é "multipart/form-data"');
-		
+
 		if($data['error'] !== UPLOAD_ERR_OK)
 			return false;
 
@@ -115,23 +116,23 @@ class ImageUploader{
 	private function getImageFileExtension($path){
 		$type = exif_imagetype($path);
 		switch($type){
-			case IMAGETYPE_GIF    : return 'gif'; 
-			case IMAGETYPE_JPEG    : return 'jpg'; 
-			case IMAGETYPE_PNG    : return 'png'; 
-			case IMAGETYPE_SWF    : return 'swf'; 
-			case IMAGETYPE_PSD    : return 'psd'; 
-			case IMAGETYPE_BMP    : return 'bmp'; 
-			case IMAGETYPE_TIFF_II : return 'tiff'; 
-			case IMAGETYPE_TIFF_MM : return 'tiff'; 
-			case IMAGETYPE_JPC    : return 'jpc'; 
-			case IMAGETYPE_JP2    : return 'jp2'; 
-			case IMAGETYPE_JPX    : return 'jpf'; 
-			case IMAGETYPE_JB2    : return 'jb2'; 
-			case IMAGETYPE_SWC    : return 'swc'; 
-			case IMAGETYPE_IFF    : return 'aiff'; 
-			case IMAGETYPE_WBMP    : return 'wbmp'; 
-			case IMAGETYPE_XBM    : return 'xbm'; 
-			default                : return false; 
+			case IMAGETYPE_GIF    : return 'gif';
+			case IMAGETYPE_JPEG    : return 'jpg';
+			case IMAGETYPE_PNG    : return 'png';
+			case IMAGETYPE_SWF    : return 'swf';
+			case IMAGETYPE_PSD    : return 'psd';
+			case IMAGETYPE_BMP    : return 'bmp';
+			case IMAGETYPE_TIFF_II : return 'tiff';
+			case IMAGETYPE_TIFF_MM : return 'tiff';
+			case IMAGETYPE_JPC    : return 'jpc';
+			case IMAGETYPE_JP2    : return 'jp2';
+			case IMAGETYPE_JPX    : return 'jpf';
+			case IMAGETYPE_JB2    : return 'jb2';
+			case IMAGETYPE_SWC    : return 'swc';
+			case IMAGETYPE_IFF    : return 'aiff';
+			case IMAGETYPE_WBMP    : return 'wbmp';
+			case IMAGETYPE_XBM    : return 'xbm';
+			default                : return false;
 		}
 	}
 }
