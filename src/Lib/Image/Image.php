@@ -2,56 +2,72 @@
 namespace AppCore\Lib\Image;
 
 class Image {
-  private $resource;
-  private $type;
+  private $_resource;
+  private $_type;
+  private $_filepath;
+  private $_filename;
+  private $_width;
+  private $_height;
 
   public function __construct($filepath)
   {
     $imageinfo = getimagesize($filepath);
-    $this->type = $imageinfo[2];
+    $this->_width = $imageinfo[0];
+    $this->_height = $imageinfo[1];
+    $this->_type = $imageinfo[2];
+    $this->_filepath = $filepath;
+    $this->_filename = pathinfo($filepath, PATHINFO_BASENAME);
+  }
 
-    switch($this->type) {
-      case IMAGETYPE_JPEG:
-        $this->resource = imagecreatefromjpeg($filepath);
-        break;
-      case IMAGETYPE_PNG:
-        $this->resource = imagecreatefrompng($filepath);
-        break;
+  public function getFilename()
+  {
+    return $this->_filename;
+  }
+
+  public function resizeTo($width, $height, $mode = 'resize')
+  {
+    switch($mode) {
+      case 'resize':
+        return $this->resize($width, $height);
+      case 'resizeCrop':
+      case 'resize_crop':
+        return $this->resizeAndCrop($width, $height);
       default:
-        throw new \Exception('Tipo de Image não suportado.');
+        return false;
     }
   }
 
-  // -- resize to max, then crop to center
-  public function resizeAndCrop($width, $height)
+  public function resizeAndCrop($newWidth, $newHeight)
   {
+    $oldWidth = $this->_width;
+    $oldHeight = $this->_height;
+
     $ratioX = $newWidth / $oldWidth;
     $ratioY = $newHeight / $oldHeight;
 
     if ($ratioX < $ratioY) {
-        $startX = round(($oldWidth - ($newWidth / $ratioY))/2);
-        $startY = 0;
-        $oldWidth = round($newWidth / $ratioY);
-        $oldHeight = $oldHeight;
+      $startX = round(($oldWidth - ($newWidth / $ratioY))/2);
+      $startY = 0;
+      $oldWidth = round($newWidth / $ratioY);
+      $oldHeight = $oldHeight;
     } else {
-        $startX = 0;
-        $startY = round(($oldHeight - ($newHeight / $ratioX))/2);
-        $oldWidth = $oldWidth;
-        $oldHeight = round($newHeight / $ratioX);
+      $startX = 0;
+      $startY = round(($oldHeight - ($newHeight / $ratioX))/2);
+      $oldWidth = $oldWidth;
+      $oldHeight = round($newHeight / $ratioX);
     }
     $applyWidth = $newWidth;
     $applyHeight = $newHeight;
 
-    //create new image
     $this->resized_image = imagecreatetruecolor($applyWidth, $applyHeight);
-    if($this->type === IMAGETYPE_PNG) {
+    if($this->_type === IMAGETYPE_PNG) {
       imagealphablending($this->resized_image, false);
       imagesavealpha($this->resized_image, true);
     }
-    imagecopyresampled($this->resized_image, $this->resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
+    imagecopyresampled($this->resized_image, $this->_resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
   }
 
-  public function resizeTo($width, $height, $keepRatio = true)
+  public function resize($newWidth, $newHeight)
   {
     $widthScale = 2;
     $heightScale = 2;
@@ -85,37 +101,64 @@ class Image {
     $startX = 0;
     $startY = 0;
 
-    //create new image
     $this->resized_image = imagecreatetruecolor($applyWidth, $applyHeight);
-    if($this->type === IMAGETYPE_PNG) {
+    if($this->_type === IMAGETYPE_PNG) {
       imagealphablending($this->resized_image, false);
       imagesavealpha($this->resized_image, true);
     }
-    imagecopyresampled($this->resized_image, $this->resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
+    imagecopyresampled($this->resized_image, $this->_resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
   }
 
-  /**
-   * $path é o nome do arquivo novo com caminho ou só o diretório?
-   */
-  public function save($path)
+  public function save($where, $name = false)
   {
-    if(!is_dir($path))
+    if(!is_dir($where) or !is_writable($where))
       throw new \Exception('$path não é um diretório válido.');
 
-    switch($this->type) {
+    if($name)
+      $this->_filename = $name;
+    else
+      $name = $this->_source_filename;
+
+    return $this->_writeImageToDisk($where, $name);
+  }
+
+  public function open()
+  {
+    switch($this->_type) {
+      case IMAGETYPE_JPEG:
+        $this->_resource = imagecreatefromjpeg($filepath);
+        break;
       case IMAGETYPE_PNG:
-        imagepng($this->resized_image, $path, 8);
+        $this->_resource = imagecreatefrompng($filepath);
+        break;
+      default:
+        throw new \Exception('Tipo de Image não suportado.');
+    }
+  }
+  
+  public function close()
+  {
+    imagedestroy($this->_resource);
+    imagedestroy($this->resized_image);
+  }
+
+  private function _writeImageToDisk($where, $name)
+  {
+    $fullpath = $where . $name;
+    switch($this->_type) {
+      case IMAGETYPE_PNG:
+        imagepng($this->resized_image, $fullpath, 8);
         break;
       case IMAGETYPE_JPEG:
-        imagejpeg($this->resized_image, $path, 90);
+        imagejpeg($this->resized_image, $fullpath, 90);
+        break;
       default:
         throw new \Exception('Tipo de Imagem inválido.');
     }
-  }
 
-  public function close()
-  {
-    imagedestroy($this->resource);
-    imagedestroy($this->resized_image);
+    if(!file_exists($fullpath))
+      throw new \Exception('Não foi possível salvar a imagem');
+
+    return new Image($fullpath);
   }
 }
