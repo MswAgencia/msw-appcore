@@ -128,10 +128,10 @@ class Image {
   {
     switch($this->_type) {
       case IMAGETYPE_JPEG:
-        $this->_resource = imagecreatefromjpeg($filepath);
+        $this->_resource = imagecreatefromjpeg($this->_filepath);
         break;
       case IMAGETYPE_PNG:
-        $this->_resource = imagecreatefrompng($filepath);
+        $this->_resource = imagecreatefrompng($this->_filepath);
         break;
       default:
         throw new \Exception('Tipo de Image não suportado.');
