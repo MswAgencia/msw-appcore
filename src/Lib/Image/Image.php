@@ -119,7 +119,7 @@ class Image {
     if($name)
       $this->_filename = $name;
     else
-      $name = $this->_source_filename;
+      $name = $this->getFilename();
 
     return $this->_writeImageToDisk($where, $name);
   }
