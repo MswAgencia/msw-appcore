@@ -39,6 +39,7 @@ class Image {
 
   public function resizeAndCrop($newWidth, $newHeight)
   {
+    $this->open();
     $oldWidth = $this->_width;
     $oldHeight = $this->_height;
 
@@ -69,6 +70,7 @@ class Image {
 
   public function resize($newWidth, $newHeight)
   {
+    $this->open();
     $widthScale = 2;
     $heightScale = 2;
 
@@ -135,7 +137,7 @@ class Image {
         throw new \Exception('Tipo de Image não suportado.');
     }
   }
-  
+
   public function close()
   {
     imagedestroy($this->_resource);
