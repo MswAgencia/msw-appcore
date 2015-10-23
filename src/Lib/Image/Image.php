@@ -1,4 +1,5 @@
 <?php
+
 namespace AppCore\Lib\Image;
 
 class Image {
@@ -22,6 +23,11 @@ class Image {
   public function getFilename()
   {
     return $this->_filename;
+  }
+
+  public function getFilepath()
+  {
+    return $this->_filepath;
   }
 
   public function resizeTo($width, $height, $mode = 'resize')
