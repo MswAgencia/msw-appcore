@@ -79,6 +79,8 @@ class Image {
     $this->open();
     $widthScale = 2;
     $heightScale = 2;
+    $oldWidth = $this->_width;
+    $oldHeight = $this->_height;
 
     if($newWidth)
       $widthScale = $newWidth / $oldWidth;
