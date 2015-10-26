@@ -21,9 +21,17 @@ class Image {
     $this->_filename = pathinfo($filepath, PATHINFO_BASENAME);
   }
 
+  public function getType()
+  {
+    return $this->_type;
+  }
+
   public function placeOver(Image $background, $posX, $posY)
   {
-    $resource = imagecopy(
+    $background->open();
+    $this->open();
+
+    imagecopy(
       $background->getResource(),
       $this->getResource(),
       $posX,
@@ -33,10 +41,8 @@ class Image {
       $this->getWidth(),
       $this->getHeight()
     );
-
     $filepath = $background->getFilepath();
-
-    return $this->_writeImageToDisk($filepath, $resource);
+    return $this->_writeImageToDisk($filepath, $background->getResource(), $background->getType());
   }
 
   public function resizeTo($width, $height, $mode = 'resize')
@@ -65,7 +71,7 @@ class Image {
     $filepath = $where . $name;
     $resource = (empty($this->_edited_resource))? $this->getResource() : $this->_edited_resource;
 
-    return $this->_writeImageToDisk($filepath, $resource);
+    return $this->_writeImageToDisk($filepath, $resource, $this->getType());
   }
 
   public function open()
@@ -84,18 +90,20 @@ class Image {
 
   public function close()
   {
-    imagedestroy($this->_resource);
-    imagedestroy($this->_edited_resource);
+    if($this->_resource)
+      imagedestroy($this->_resource);
+    if($this->_edited_resource)
+      imagedestroy($this->_edited_resource);
   }
 
-  private function _writeImageToDisk($filepath, $resource)
+  private function _writeImageToDisk($filepath, $resource, $type)
   {
-    switch($this->_type) {
+    switch($type) {
       case IMAGETYPE_PNG:
         imagepng($resource, $filepath, 8);
         break;
       case IMAGETYPE_JPEG:
-        imagejpeg($resource, $filepath, 90);
+        imagejpeg($resource, $filepath, 80);
         break;
       default:
         throw new \Exception('Tipo de Imagem inválido.');
