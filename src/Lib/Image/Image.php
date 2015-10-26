@@ -4,6 +4,7 @@ namespace AppCore\Lib\Image;
 
 class Image {
   private $_resource;
+  private $_edited_resource = null;
   private $_type;
   private $_filepath;
   private $_filename;
@@ -20,14 +21,22 @@ class Image {
     $this->_filename = pathinfo($filepath, PATHINFO_BASENAME);
   }
 
-  public function getFilename()
+  public function placeOver(Image $background, $posX, $posY)
   {
-    return $this->_filename;
-  }
+    $resource = imagecopy(
+      $background->getResource(),
+      $this->getResource(),
+      $posX,
+      $posY,
+      0,
+      0,
+      $this->getWidth(),
+      $this->getHeight()
+    );
 
-  public function getFilepath()
-  {
-    return $this->_filepath;
+    $filepath = $background->getFilepath();
+
+    return $this->_writeImageToDisk($filepath, $resource);
   }
 
   public function resizeTo($width, $height, $mode = 'resize')
@@ -41,6 +50,61 @@ class Image {
       default:
         return false;
     }
+  }
+
+  public function save($where, $name = false)
+  {
+    if(!is_dir($where) or !is_writable($where))
+      throw new \Exception('$path não é um diretório válido.');
+
+    if($name)
+      $this->_filename = $name;
+    else
+      $name = $this->getFilename();
+
+    $filepath = $where . $name;
+    $resource = (empty($this->_edited_resource))? $this->getResource() : $this->_edited_resource;
+
+    return $this->_writeImageToDisk($filepath, $resource);
+  }
+
+  public function open()
+  {
+    switch($this->_type) {
+      case IMAGETYPE_JPEG:
+        $this->_resource = imagecreatefromjpeg($this->_filepath);
+        break;
+      case IMAGETYPE_PNG:
+        $this->_resource = imagecreatefrompng($this->_filepath);
+        break;
+      default:
+        throw new \Exception('Tipo de Image não suportado.');
+    }
+  }
+
+  public function close()
+  {
+    imagedestroy($this->_resource);
+    imagedestroy($this->_edited_resource);
+  }
+
+  private function _writeImageToDisk($filepath, $resource)
+  {
+    switch($this->_type) {
+      case IMAGETYPE_PNG:
+        imagepng($resource, $filepath, 8);
+        break;
+      case IMAGETYPE_JPEG:
+        imagejpeg($resource, $filepath, 90);
+        break;
+      default:
+        throw new \Exception('Tipo de Imagem inválido.');
+    }
+
+    if(!file_exists($filepath))
+      throw new \Exception('Não foi possível salvar a imagem');
+
+    return new Image($filepath);
   }
 
   public function resizeAndCrop($newWidth, $newHeight)
@@ -66,12 +130,12 @@ class Image {
     $applyWidth = $newWidth;
     $applyHeight = $newHeight;
 
-    $this->resized_image = imagecreatetruecolor($applyWidth, $applyHeight);
+    $this->_edited_resource = imagecreatetruecolor($applyWidth, $applyHeight);
     if($this->_type === IMAGETYPE_PNG) {
-      imagealphablending($this->resized_image, false);
-      imagesavealpha($this->resized_image, true);
+      imagealphablending($this->_edited_resource, false);
+      imagesavealpha($this->_edited_resource, true);
     }
-    imagecopyresampled($this->resized_image, $this->_resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
+    imagecopyresampled($this->_edited_resource, $this->_resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
   }
 
   public function resize($newWidth, $newHeight)
@@ -108,67 +172,37 @@ class Image {
       $applyWidth = $maxWidth;
       $applyHeight = $maxHeight;
     }
-    $startX = 0;
-    $startY = 0;
 
-    $this->resized_image = imagecreatetruecolor($applyWidth, $applyHeight);
+    $this->_edited_resource = imagecreatetruecolor($applyWidth, $applyHeight);
     if($this->_type === IMAGETYPE_PNG) {
-      imagealphablending($this->resized_image, false);
-      imagesavealpha($this->resized_image, true);
+      imagealphablending($this->_edited_resource, false);
+      imagesavealpha($this->_edited_resource, true);
     }
-    imagecopyresampled($this->resized_image, $this->_resource, 0,0 , $startX, $startY, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
+    imagecopyresampled($this->_edited_resource, $this->_resource, 0, 0, 0, 0, $applyWidth, $applyHeight, $oldWidth, $oldHeight);
   }
 
-  public function save($where, $name = false)
+  public function getFilename()
   {
-    if(!is_dir($where) or !is_writable($where))
-      throw new \Exception('$path não é um diretório válido.');
-
-    if($name)
-      $this->_filename = $name;
-    else
-      $name = $this->getFilename();
-
-    return $this->_writeImageToDisk($where, $name);
+    return $this->_filename;
   }
 
-  public function open()
+  public function getFilepath()
   {
-    switch($this->_type) {
-      case IMAGETYPE_JPEG:
-        $this->_resource = imagecreatefromjpeg($this->_filepath);
-        break;
-      case IMAGETYPE_PNG:
-        $this->_resource = imagecreatefrompng($this->_filepath);
-        break;
-      default:
-        throw new \Exception('Tipo de Image não suportado.');
-    }
+    return $this->_filepath;
   }
 
-  public function close()
+  public function getResource()
   {
-    imagedestroy($this->_resource);
-    imagedestroy($this->resized_image);
+    return $this->_resource;
   }
 
-  private function _writeImageToDisk($where, $name)
+  public function getWidth()
   {
-    $fullpath = $where . $name;
-    switch($this->_type) {
-      case IMAGETYPE_PNG:
-        imagepng($this->resized_image, $fullpath, 8);
-        break;
-      case IMAGETYPE_JPEG:
-        imagejpeg($this->resized_image, $fullpath, 90);
-        break;
-      default:
-        throw new \Exception('Tipo de Imagem inválido.');
-    }
+    return $this->_width;
+  }
 
-    if(!file_exists($fullpath))
-      throw new \Exception('Não foi possível salvar a imagem');
-
-    return new Image($fullpath);
+  public function getHeight()
+  {
+    return $this->_height;
   }
 }
